@@ -1,0 +1,255 @@
+﻿using Labs.Utility;
+using OpenTK;
+using OpenTK.Graphics;
+using OpenTK.Graphics.OpenGL;
+using System;
+
+namespace Labs.ACW
+{
+    public class ACWWindow : GameWindow
+    {
+
+        public ACWWindow()
+            : base(
+                800, // Width
+                600, // Height
+                GraphicsMode.Default,
+                "Assessed Coursework",
+                GameWindowFlags.Default,
+                DisplayDevice.Default,
+                3, // major
+                3, // minor
+                GraphicsContextFlags.ForwardCompatible
+                )
+        {
+        }
+
+        private int[] mVBO_IDs = new int[2];
+        private int mVAO_ID;
+        private ShaderUtility mShader;
+        private ModelUtility topCube, middleCube, bottomCube;
+        private Matrix4 mView;
+        string cameraMode = "user";
+
+        protected override void OnLoad(EventArgs e)
+        {
+            // Set some GL state
+            GL.ClearColor(Color4.DodgerBlue);
+            GL.Enable(EnableCap.DepthTest);
+            GL.Enable(EnableCap.CullFace);
+            topCube = ModelUtility.LoadModel(@"Utility/Models/cube_top.sjg");
+            middleCube = ModelUtility.LoadModel(@"Utility/Models/cube_middle.sjg");
+            bottomCube = ModelUtility.LoadModel(@"Utility/Models/cube_bottom.sjg");
+            mShader = new ShaderUtility(@"ACW/Shaders/VertexShader.vert", @"ACW/Shaders/FragmentShader.frag");
+            mView = Matrix4.CreateTranslation(0, -0.6f, -1.7f);
+            GL.UseProgram(mShader.ShaderProgramID);
+            int vPositionLocation = GL.GetAttribLocation(mShader.ShaderProgramID, "vPosition");
+            int vColourLocation = GL.GetAttribLocation(mShader.ShaderProgramID, "vColour");
+            int uView = GL.GetUniformLocation(mShader.ShaderProgramID, "uView");
+            GL.UniformMatrix4(uView, true, ref mView);
+            int uProjectionLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uProjection");
+            Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(1, (float)ClientRectangle.Width / ClientRectangle.Height, 0.5f, 5);
+            GL.UniformMatrix4(uProjectionLocation, true, ref projection);
+
+            mVAO_ID = GL.GenVertexArray();
+            GL.GenBuffers(mVBO_IDs.Length, mVBO_IDs);
+
+            //topcube
+            GL.BindVertexArray(mVAO_ID);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, mVBO_IDs[0]);
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(topCube.Vertices.Length * sizeof(float)), topCube.Vertices, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, mVBO_IDs[1]);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)(topCube.Indices.Length * sizeof(float)), topCube.Indices, BufferUsageHint.StaticDraw);
+            int size;
+            GL.GetBufferParameter(BufferTarget.ArrayBuffer, BufferParameterName.BufferSize, out size);
+            if (topCube.Vertices.Length * sizeof(float) != size)
+            {
+                throw new ApplicationException("Vertex data not loaded onto graphics card correctly");
+            }
+
+            GL.GetBufferParameter(BufferTarget.ElementArrayBuffer, BufferParameterName.BufferSize, out size);
+            if (topCube.Indices.Length * sizeof(float) != size)
+            {
+                throw new ApplicationException("Index data not loaded onto graphics card correctly");
+            }
+            GL.EnableVertexAttribArray(vPositionLocation);
+            GL.VertexAttribPointer(vPositionLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+            GL.EnableVertexAttribArray(vColourLocation);
+            GL.VertexAttribPointer(vColourLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+            GL.BindVertexArray(0);
+
+            //middlecube
+            GL.BindVertexArray(mVAO_ID);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, mVBO_IDs[0]);
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(middleCube.Vertices.Length * sizeof(float)), middleCube.Vertices, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, mVBO_IDs[1]);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)(middleCube.Indices.Length * sizeof(float)), middleCube.Indices, BufferUsageHint.StaticDraw);
+            GL.GetBufferParameter(BufferTarget.ArrayBuffer, BufferParameterName.BufferSize, out size);
+            if (middleCube.Vertices.Length * sizeof(float) != size)
+            {
+                throw new ApplicationException("Vertex data not loaded onto graphics card correctly");
+            }
+
+            GL.GetBufferParameter(BufferTarget.ElementArrayBuffer, BufferParameterName.BufferSize, out size);
+            if (middleCube.Indices.Length * sizeof(float) != size)
+            {
+                throw new ApplicationException("Index data not loaded onto graphics card correctly");
+            }
+            GL.EnableVertexAttribArray(vPositionLocation);
+            GL.VertexAttribPointer(vPositionLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+            GL.EnableVertexAttribArray(vColourLocation);
+            GL.VertexAttribPointer(vColourLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+            GL.BindVertexArray(0);
+
+            //bottomcube
+            GL.BindVertexArray(mVAO_ID);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, mVBO_IDs[0]);
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(bottomCube.Vertices.Length * sizeof(float)), bottomCube.Vertices, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, mVBO_IDs[1]);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)(bottomCube.Indices.Length * sizeof(float)), bottomCube.Indices, BufferUsageHint.StaticDraw);
+            GL.GetBufferParameter(BufferTarget.ArrayBuffer, BufferParameterName.BufferSize, out size);
+            if (bottomCube.Vertices.Length * sizeof(float) != size)
+            {
+                throw new ApplicationException("Vertex data not loaded onto graphics card correctly");
+            }
+
+            GL.GetBufferParameter(BufferTarget.ElementArrayBuffer, BufferParameterName.BufferSize, out size);
+            if (bottomCube.Indices.Length * sizeof(float) != size)
+            {
+                throw new ApplicationException("Index data not loaded onto graphics card correctly");
+            }
+            GL.EnableVertexAttribArray(vPositionLocation);
+            GL.VertexAttribPointer(vPositionLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+            GL.EnableVertexAttribArray(vColourLocation);
+            GL.VertexAttribPointer(vColourLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+            GL.BindVertexArray(0);
+
+            base.OnLoad(e);
+        }
+
+        protected override void OnKeyPress(KeyPressEventArgs e)
+        {
+            base.OnKeyPress(e);
+            if (e.KeyChar == 'v')
+            {
+                cameraMode = "fixed";
+                mView = Matrix4.CreateTranslation(0, -0.6f, -1.7f);
+                MoveCamera();
+            }
+            if (e.KeyChar == 'u')
+            {
+                cameraMode = "user";
+                mView = Matrix4.CreateTranslation(0, -0.6f, -1.7f);
+                MoveCamera();
+            }
+            if (e.KeyChar == 'p')
+            {
+                cameraMode = "path";
+                mView = Matrix4.CreateTranslation(0, -0.6f, -1.7f);
+                MoveCamera();
+            }
+            if (e.KeyChar == 'a' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateTranslation(0.01f, 0, 0);
+                MoveCamera();
+            }            if (e.KeyChar == 'd' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateTranslation(-0.01f, 0, 0);
+                MoveCamera();
+            }            if (e.KeyChar == 's' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateTranslation(0, 0, -0.01f);
+                MoveCamera();
+            }            if (e.KeyChar == 'w' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateTranslation(0, 0, 0.01f);
+                MoveCamera();
+            }            if (e.KeyChar == 'r' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateTranslation(0, -0.01f, 0);
+                MoveCamera();
+            }            if (e.KeyChar == 'f' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateTranslation(0, 0.01f, 0);
+                MoveCamera();
+            }            if (e.KeyChar == 'e' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateRotationY(0.01f);
+                MoveCamera();
+            }            if (e.KeyChar == 'q' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateRotationY(-0.01f);
+                MoveCamera();
+            }
+        }
+
+        private void MoveCamera()
+        {
+            int uView = GL.GetUniformLocation(mShader.ShaderProgramID, "uView");
+            GL.UniformMatrix4(uView, true, ref mView);
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(1, (float)ClientRectangle.Width / ClientRectangle.Height, 0.5f, 5);
+            GL.Viewport(this.ClientRectangle);
+        }
+
+        protected override void OnUpdateFrame(FrameEventArgs e)
+        {
+ 	        base.OnUpdateFrame(e);
+
+            if (cameraMode == "path")
+            {
+                mView = mView * Matrix4.CreateRotationY(0.012f) * Matrix4.CreateTranslation(0.02f, 0, 0);
+                MoveCamera();
+            }
+
+        }
+
+        protected override void OnRenderFrame(FrameEventArgs e)
+        {
+            base.OnRenderFrame(e);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            int uModelLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uModel");
+            Matrix4 m1 = Matrix4.CreateTranslation(0, 0, 0);
+            GL.UniformMatrix4(uModelLocation, true, ref m1);
+            GL.BindVertexArray(mVAO_ID);
+            GL.DrawElements(BeginMode.Triangles, bottomCube.Indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            uModelLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uModel");
+            m1 = Matrix4.CreateTranslation(0.0f, 0.4f, 0);
+            GL.UniformMatrix4(uModelLocation, true, ref m1);
+            GL.BindVertexArray(mVAO_ID);
+            GL.DrawElements(BeginMode.Triangles, middleCube.Indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            uModelLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uModel");
+            m1 = Matrix4.CreateTranslation(0.0f, 0.8f, 0);
+            GL.UniformMatrix4(uModelLocation, true, ref m1);
+            GL.BindVertexArray(mVAO_ID);
+            GL.DrawElements(BeginMode.Triangles, middleCube.Indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            uModelLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uModel");
+            m1 = Matrix4.CreateTranslation(0.0f, 1.2f, 0);
+            GL.UniformMatrix4(uModelLocation, true, ref m1);
+            GL.BindVertexArray(mVAO_ID);
+            GL.DrawElements(BeginMode.Triangles, topCube.Indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            GL.BindVertexArray(0);
+            this.SwapBuffers();
+        }
+
+        protected override void OnUnload(EventArgs e)
+        {
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+            GL.BindVertexArray(0);
+            GL.DeleteBuffers(mVBO_IDs.Length, mVBO_IDs);
+            GL.DeleteVertexArray(mVAO_ID);
+            mShader.Delete();
+            base.OnUnload(e);
+        }
+    }
+}

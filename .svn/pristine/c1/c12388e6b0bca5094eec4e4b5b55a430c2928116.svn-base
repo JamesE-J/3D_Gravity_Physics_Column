@@ -1,0 +1,345 @@
+﻿using Labs.Utility;
+using OpenTK;
+using OpenTK.Graphics;
+using OpenTK.Graphics.OpenGL;
+using System;
+
+namespace Labs.ACW
+{
+    public class ACWWindow : GameWindow
+    {
+
+        public ACWWindow()
+            : base(
+                800, // Width
+                600, // Height
+                GraphicsMode.Default,
+                "Assessed Coursework",
+                GameWindowFlags.Default,
+                DisplayDevice.Default,
+                3, // major
+                3, // minor
+                GraphicsContextFlags.ForwardCompatible
+                )
+        {
+        }
+
+        private int[] mVBO_IDs = new int[8];
+        private int[] mVAO_IDs = new int[4];
+        private ShaderUtility mShader;
+        private ModelUtility middleCube, endCube, sphere, cylinder;
+        private Matrix4 mView;
+        string cameraMode = "user";
+
+        protected override void OnLoad(EventArgs e)
+        {
+            // Set some GL state
+            GL.ClearColor(Color4.DodgerBlue);
+            GL.Enable(EnableCap.DepthTest);
+            GL.Enable(EnableCap.CullFace);
+            middleCube = ModelUtility.LoadModel(@"Utility/Models/cube_middle.sjg");
+            endCube = ModelUtility.LoadModel(@"Utility/Models/cube_end.sjg");
+            sphere = ModelUtility.LoadModel(@"Utility/Models/sphere.bin");
+            cylinder = ModelUtility.LoadModel(@"Utility/Models/cylinder.bin");
+            mShader = new ShaderUtility(@"ACW/Shaders/VertexShader.vert", @"ACW/Shaders/FragmentShader.frag");
+            mView = Matrix4.CreateTranslation(0, -0.3f, -1f);
+            GL.UseProgram(mShader.ShaderProgramID);
+            int vPositionLocation = GL.GetAttribLocation(mShader.ShaderProgramID, "vPosition");
+            int vColourLocation = GL.GetAttribLocation(mShader.ShaderProgramID, "vColour");
+            int uView = GL.GetUniformLocation(mShader.ShaderProgramID, "uView");
+            GL.UniformMatrix4(uView, true, ref mView);
+            int uProjectionLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uProjection");
+            Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(1, (float)ClientRectangle.Width / ClientRectangle.Height, 0.5f, 5);
+            GL.UniformMatrix4(uProjectionLocation, true, ref projection);
+
+            GL.GenVertexArrays(mVAO_IDs.Length, mVAO_IDs);
+            GL.GenBuffers(mVBO_IDs.Length, mVBO_IDs);
+
+            //middlecube
+            GL.BindVertexArray(mVAO_IDs[0]);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, mVBO_IDs[0]);
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(middleCube.Vertices.Length * sizeof(float)), middleCube.Vertices, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, mVBO_IDs[1]);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)(middleCube.Indices.Length * sizeof(float)), middleCube.Indices, BufferUsageHint.StaticDraw);
+            int size;
+            GL.GetBufferParameter(BufferTarget.ArrayBuffer, BufferParameterName.BufferSize, out size);
+            if (middleCube.Vertices.Length * sizeof(float) != size)
+            {
+                throw new ApplicationException("Vertex data not loaded onto graphics card correctly");
+            }
+
+            GL.GetBufferParameter(BufferTarget.ElementArrayBuffer, BufferParameterName.BufferSize, out size);
+            if (middleCube.Indices.Length * sizeof(float) != size)
+            {
+                throw new ApplicationException("Index data not loaded onto graphics card correctly");
+            }
+            GL.EnableVertexAttribArray(vPositionLocation);
+            GL.VertexAttribPointer(vPositionLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+            GL.EnableVertexAttribArray(vColourLocation);
+            GL.VertexAttribPointer(vColourLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+            GL.BindVertexArray(0);
+
+            //endcube
+            GL.BindVertexArray(mVAO_IDs[1]);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, mVBO_IDs[2]);
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(endCube.Vertices.Length * sizeof(float)), endCube.Vertices, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, mVBO_IDs[3]);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)(endCube.Indices.Length * sizeof(float)), endCube.Indices, BufferUsageHint.StaticDraw);
+            GL.GetBufferParameter(BufferTarget.ArrayBuffer, BufferParameterName.BufferSize, out size);
+            if (endCube.Vertices.Length * sizeof(float) != size)
+            {
+                throw new ApplicationException("Vertex data not loaded onto graphics card correctly");
+            }
+
+            GL.GetBufferParameter(BufferTarget.ElementArrayBuffer, BufferParameterName.BufferSize, out size);
+            if (endCube.Indices.Length * sizeof(float) != size)
+            {
+                throw new ApplicationException("Index data not loaded onto graphics card correctly");
+            }
+            GL.EnableVertexAttribArray(vPositionLocation);
+            GL.VertexAttribPointer(vPositionLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+            GL.EnableVertexAttribArray(vColourLocation);
+            GL.VertexAttribPointer(vColourLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+            GL.BindVertexArray(0);
+
+            //sphere
+            GL.BindVertexArray(mVAO_IDs[2]);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, mVBO_IDs[4]);
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(sphere.Vertices.Length * sizeof(float)), sphere.Vertices, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, mVBO_IDs[5]);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)(sphere.Indices.Length * sizeof(float)), sphere.Indices, BufferUsageHint.StaticDraw);
+            GL.GetBufferParameter(BufferTarget.ArrayBuffer, BufferParameterName.BufferSize, out size);
+            if (sphere.Vertices.Length * sizeof(float) != size)
+            {
+                throw new ApplicationException("Vertex data not loaded onto graphics card correctly");
+            }
+
+            GL.GetBufferParameter(BufferTarget.ElementArrayBuffer, BufferParameterName.BufferSize, out size);
+            if (sphere.Indices.Length * sizeof(float) != size)
+            {
+                throw new ApplicationException("Index data not loaded onto graphics card correctly");
+            }
+            GL.EnableVertexAttribArray(vPositionLocation);
+            GL.VertexAttribPointer(vPositionLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+            GL.EnableVertexAttribArray(vColourLocation);
+            GL.VertexAttribPointer(vColourLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+            GL.BindVertexArray(0);
+
+            //cylinder
+            GL.BindVertexArray(mVAO_IDs[3]);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, mVBO_IDs[6]);
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(cylinder.Vertices.Length * sizeof(float)), cylinder.Vertices, BufferUsageHint.StaticDraw);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, mVBO_IDs[7]);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)(cylinder.Indices.Length * sizeof(float)), cylinder.Indices, BufferUsageHint.StaticDraw);
+            GL.GetBufferParameter(BufferTarget.ArrayBuffer, BufferParameterName.BufferSize, out size);
+            if (cylinder.Vertices.Length * sizeof(float) != size)
+            {
+                throw new ApplicationException("Vertex data not loaded onto graphics card correctly");
+            }
+
+            GL.GetBufferParameter(BufferTarget.ElementArrayBuffer, BufferParameterName.BufferSize, out size);
+            if (cylinder.Indices.Length * sizeof(float) != size)
+            {
+                throw new ApplicationException("Index data not loaded onto graphics card correctly");
+            }
+            GL.EnableVertexAttribArray(vPositionLocation);
+            GL.VertexAttribPointer(vPositionLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+            GL.EnableVertexAttribArray(vColourLocation);
+            GL.VertexAttribPointer(vColourLocation, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+            GL.BindVertexArray(0);
+
+            base.OnLoad(e);
+        }
+
+        protected override void OnKeyPress(KeyPressEventArgs e)
+        {
+            base.OnKeyPress(e);
+            if (e.KeyChar == 'v')
+            {
+                cameraMode = "fixed";
+                mView = Matrix4.CreateTranslation(0, -0.3f, -1f);
+                MoveCamera();
+            }
+            if (e.KeyChar == 'u')
+            {
+                cameraMode = "user";
+                mView = Matrix4.CreateTranslation(0, -0.3f, -1f);
+                MoveCamera();
+            }
+            if (e.KeyChar == 'p')
+            {
+                cameraMode = "path";
+                mView = Matrix4.CreateTranslation(0, -0.3f, -1f);
+                MoveCamera();
+            }
+            if (e.KeyChar == 'a' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateTranslation(0.01f, 0, 0);
+                MoveCamera();
+            }            if (e.KeyChar == 'd' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateTranslation(-0.01f, 0, 0);
+                MoveCamera();
+            }            if (e.KeyChar == 's' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateTranslation(0, 0, -0.01f);
+                MoveCamera();
+            }            if (e.KeyChar == 'w' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateTranslation(0, 0, 0.01f);
+                MoveCamera();
+            }            if (e.KeyChar == 'r' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateTranslation(0, -0.01f, 0);
+                MoveCamera();
+            }            if (e.KeyChar == 'f' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateTranslation(0, 0.01f, 0);
+                MoveCamera();
+            }            if (e.KeyChar == 'e' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateRotationY(0.01f) * Matrix4.CreateTranslation(0.01f, 0, 0);
+                MoveCamera();
+            }            if (e.KeyChar == 'q' && cameraMode == "user")
+            {
+                mView = mView * Matrix4.CreateRotationY(-0.01f) * Matrix4.CreateTranslation(-0.01f, 0, 0);
+                MoveCamera();
+            }
+        }
+
+        private void MoveCamera()
+        {
+            int uView = GL.GetUniformLocation(mShader.ShaderProgramID, "uView");
+            GL.UniformMatrix4(uView, true, ref mView);
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(1, (float)ClientRectangle.Width / ClientRectangle.Height, 0.5f, 5);
+            GL.Viewport(this.ClientRectangle);
+        }
+
+        protected override void OnUpdateFrame(FrameEventArgs e)
+        {
+ 	        base.OnUpdateFrame(e);
+
+            if (cameraMode == "path")
+            {
+                mView = mView * Matrix4.CreateRotationY(0.01f) * Matrix4.CreateTranslation(0.01f, 0, 0);
+                MoveCamera();
+            }
+
+        }
+
+        protected override void OnRenderFrame(FrameEventArgs e)
+        {
+            base.OnRenderFrame(e);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            int uModelLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uModel");
+            Matrix4 m1 = Matrix4.CreateTranslation(0, 0, 0);
+            GL.UniformMatrix4(uModelLocation, true, ref m1);
+            GL.BindVertexArray(mVAO_IDs[1]);
+            GL.DrawElements(BeginMode.Triangles, endCube.Indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            uModelLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uModel");
+            m1 = Matrix4.CreateTranslation(0.0f, -0.6f, 0);
+            Matrix4 r1 = Matrix4.CreateRotationZ(3.14159f);
+            Matrix4 c1 = m1 * r1;
+            GL.UniformMatrix4(uModelLocation, true, ref c1);
+            GL.BindVertexArray(mVAO_IDs[1]);
+            GL.DrawElements(BeginMode.Triangles, endCube.Indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            uModelLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uModel");
+            m1 = Matrix4.CreateTranslation(0.0f, 0.4f, 0);
+            GL.UniformMatrix4(uModelLocation, true, ref m1);
+            GL.BindVertexArray(mVAO_IDs[0]);
+            GL.DrawElements(BeginMode.Triangles, middleCube.Indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            uModelLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uModel");
+            m1 = Matrix4.CreateTranslation(0.0f, 0.2f, 0);
+            GL.UniformMatrix4(uModelLocation, true, ref m1);
+            GL.BindVertexArray(mVAO_IDs[0]);
+            GL.DrawElements(BeginMode.Triangles, middleCube.Indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            uModelLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uModel");
+            m1 = Matrix4.CreateTranslation(0, 0, 0);
+            Matrix4 s1 = Matrix4.CreateScale(0.035f);
+            c1 = s1 * m1;
+            GL.UniformMatrix4(uModelLocation, true, ref c1);
+            GL.BindVertexArray(mVAO_IDs[2]);
+            GL.DrawElements(BeginMode.Triangles, sphere.Indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            uModelLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uModel");
+            m1 = Matrix4.CreateTranslation(0, 0.4f, 0);
+            s1 = Matrix4.CreateScale(0.1f,0.015f,0.015f);
+            r1 = Matrix4.CreateRotationZ(1.5708f);
+            c1 = r1 * s1 * m1 ;
+            GL.UniformMatrix4(uModelLocation, true, ref c1);
+            GL.BindVertexArray(mVAO_IDs[3]);
+            GL.DrawElements(BeginMode.Triangles, cylinder.Indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            uModelLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uModel");
+            m1 = Matrix4.CreateTranslation(0, 0.445f, 0);
+            s1 = Matrix4.CreateScale(0.0075f, 0.0075f, 0.1f);
+            r1 = Matrix4.CreateRotationX(1.5708f);
+            c1 = r1 * s1 * m1;
+            GL.UniformMatrix4(uModelLocation, true, ref c1);
+            GL.BindVertexArray(mVAO_IDs[3]);
+            GL.DrawElements(BeginMode.Triangles, cylinder.Indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            uModelLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uModel");
+            m1 = Matrix4.CreateTranslation(-0.050f, 0.355f, 0);
+            s1 = Matrix4.CreateScale(0.0075f, 0.0075f, 0.1f);
+            r1 = Matrix4.CreateRotationX(1.5708f);
+            c1 = r1 * s1 * m1;
+            GL.UniformMatrix4(uModelLocation, true, ref c1);
+            GL.BindVertexArray(mVAO_IDs[3]);
+            GL.DrawElements(BeginMode.Triangles, cylinder.Indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            uModelLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uModel");
+            m1 = Matrix4.CreateTranslation(0.050f, 0.355f, 0f);
+            s1 = Matrix4.CreateScale(0.0075f, 0.0075f, 0.1f);
+            r1 = Matrix4.CreateRotationX(1.5708f);
+            c1 = r1 * s1 * m1;
+            GL.UniformMatrix4(uModelLocation, true, ref c1);
+            GL.BindVertexArray(mVAO_IDs[3]);
+            GL.DrawElements(BeginMode.Triangles, cylinder.Indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            uModelLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uModel");
+            m1 = Matrix4.CreateTranslation(0, 0.25f, 0);
+            s1 = Matrix4.CreateScale(0.015f, 0.1f, 0.015f);
+            r1 = Matrix4.CreateRotationZ(1.5708f);
+            Matrix4 r2 = Matrix4.CreateRotationY(0.785398f);
+            c1 = s1 * r1 * r2 * m1;
+            GL.UniformMatrix4(uModelLocation, true, ref c1);
+            GL.BindVertexArray(mVAO_IDs[3]);
+            GL.DrawElements(BeginMode.Triangles, cylinder.Indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            uModelLocation = GL.GetUniformLocation(mShader.ShaderProgramID, "uModel");
+            m1 = Matrix4.CreateTranslation(0, 0.15f, 0);
+            s1 = Matrix4.CreateScale(0.015f, 0.1f, 0.015f);
+            r1 = Matrix4.CreateRotationZ(1.5708f);
+            r2 = Matrix4.CreateRotationY(-0.785398f);
+            c1 = s1 *r1* r2* m1;
+            GL.UniformMatrix4(uModelLocation, true, ref c1);
+            GL.BindVertexArray(mVAO_IDs[3]);
+            GL.DrawElements(BeginMode.Triangles, cylinder.Indices.Length, DrawElementsType.UnsignedInt, 0);
+
+            GL.BindVertexArray(0);
+            this.SwapBuffers();
+        }
+
+        protected override void OnUnload(EventArgs e)
+        {
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+            GL.BindVertexArray(0);
+            GL.DeleteBuffers(mVBO_IDs.Length, mVBO_IDs);
+            GL.DeleteVertexArrays(mVAO_IDs.Length, mVAO_IDs);
+            mShader.Delete();
+            base.OnUnload(e);
+        }
+    }
+}
